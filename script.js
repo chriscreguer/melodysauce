@@ -211,22 +211,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Note to Sequence Conversion ---
     function makeProto(notes) {
-        const bars = +barsInput.value;
         const res = +resInput.value;
+        // Compute total length in steps from your notes, instead of barsInput
+        const totalSteps = notes.reduce((m,n) => Math.max(m, n.step + n.duration), 0);
+        const totalTime_secs = totalSteps / res * (60 / +bpmInput.value);
+
         const seqNotes = notes.map(n => ({
             pitch: n.pitch,
-            startTime: n.step / res,
-            endTime: (n.step + n.duration) / res
+            startTime: n.step / res * (60 / +bpmInput.value),
+            endTime:   (n.step + n.duration) / res * (60 / +bpmInput.value)
         }));
         const seqJson = {
             ticksPerQuarter: 220,
-            totalTime: bars * beats,
+            totalTime: totalTime_secs,
             notes: seqNotes,
-            tempos: [{ time: 0, qpm: +bpmInput.value }]
+            tempos: [{time: 0, qpm: +bpmInput.value}]
         };
-        return core.sequences.unquantizeSequence(
-            core.sequences.quantizeNoteSequence(seqJson, res)
-        );
+        // quantize just to get a NoteSequence; unquantize to get real timings back
+        const q = core.sequences.quantizeNoteSequence(seqJson, res);
+        return core.sequences.unquantizeSequence(q, +bpmInput.value);
     }
 
     // --- Event Handlers ---
@@ -542,33 +545,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const playBtn = document.createElement('button');
             playBtn.textContent = '▶️ Play';
             playBtn.onclick = async () => {
-                const player = new Tone.Player().toDestination();
-                await Tone.loaded();
-                
-                const variantSynth = new Tone.PolySynth(Tone.Synth).toDestination();
-                const part = new Tone.Part((time, note) => {
-                    variantSynth.triggerAttackRelease(
-                        Tone.Frequency(note.pitch, 'midi'),
-                        note.quantizedEndStep - note.quantizedStartStep,
-                        time
-                    );
-                }, winner.seq.notes).start(0);
-
-                part.loop = false;
-
-                const duration = Tone.Time(core.sequences.quantizeNoteSequence(winner.seq, 4).totalQuantizedSteps, "4n").toSeconds();
-
-                if (Tone.Transport.state === 'started') {
-                    Tone.Transport.pause();
-                }
-                
-                Tone.Transport.scheduleOnce(() => {
-                    part.stop();
-                    part.dispose();
-                    variantSynth.dispose();
-                }, `+${duration}`);
-                
-                Tone.Transport.start();
+                await Tone.start();
+                const player = new core.Player();
+                // winner.seq is already a NoteSequence proto (quantized). Unquantize it to real time:
+                const unq = core.sequences.unquantizeSequence(winner.seq);
+                player.start(unq);
             };
             card.appendChild(playBtn);
 
