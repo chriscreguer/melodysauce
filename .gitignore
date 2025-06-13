@@ -1,0 +1,15 @@
+# Dependencies
+/node_modules
+/magenta
+
+# Build artifacts
+/dist
+/build
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System files
+.DS_Store 
