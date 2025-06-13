@@ -545,10 +545,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const playBtn = document.createElement('button');
             playBtn.textContent = '▶️ Play';
             playBtn.onclick = async () => {
+                // Pause main transport if it's playing
+                if (Tone.Transport.state === 'started') {
+                    Tone.Transport.pause();
+                    cancelAnimationFrame(playheadAnimationId);
+                    playInBtn.textContent = '▶️ Play';
+                    drawEditor();
+                }
                 await Tone.start();
                 const player = new core.Player();
-                // winner.seq is already a NoteSequence proto (quantized). Unquantize it to real time:
-                const unq = core.sequences.unquantizeSequence(winner.seq);
+                // The user's patch was missing the BPM, which is crucial.
+                const unq = core.sequences.unquantizeSequence(winner.seq, +bpmInput.value);
                 player.start(unq);
             };
             card.appendChild(playBtn);
