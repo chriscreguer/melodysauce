@@ -1,0 +1,16 @@
+{
+  "name": "melody-mutator",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@magenta/music": "^1.23.1",
+    "tone": "^15.1.22"
+  },
+  "description": ""
+}
